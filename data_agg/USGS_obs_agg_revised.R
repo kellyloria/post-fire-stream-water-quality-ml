@@ -42,7 +42,7 @@ library(readr)
 # 0.  Constants
 # -----------------------------------------------------------------------------
 
-target_states <- c("CA", "WA", "OR", "ID", "NV", "AZ")
+target_states <- c("CA", "WA", "OR", "ID", "NV", "AZ", "MT")
 
 PARM_DO   <- "00300"   # Dissolved oxygen, mg/L
 PARM_TEMP <- "00010"   # Water temperature, deg C
@@ -208,6 +208,8 @@ site_meta <- bind_rows(do_sites_raw, temp_sites_raw) %>%
     #drainage_sqmi = drain_area_va
   )
 
+
+
 # Wide summary: one row per qualifying site
 do_summary   <- sites_with_do   %>% { parm_site_summary[parm_site_summary$parm_cd == PARM_DO,   ] } %>%
   rename(do_count = total_count, do_start = rec_start, do_end = rec_end) %>%
@@ -263,9 +265,75 @@ fetch_uv <- function(site) {
   )
 }
 
+
+
+###
 uv_list <- map(qualifying_sites$site_no, fetch_uv)
 uv_list <- Filter(Negate(is.null), uv_list)
-uv_raw  <- bind_rows(uv_list)
+
+library(arrow)
+
+dir.create("uv_data_by_site", showWarnings = FALSE)
+
+fetch_and_write_uv <- function(site) {
+  message("  fetching site ", site)
+  tryCatch({
+    df <- readNWISuv(
+      siteNumbers = site,
+      parameterCd = c(PARM_FLOW, PARM_DO, PARM_TEMP),
+      startDate   = START_DATE, endDate = END_DATE
+    )
+    if (nrow(df) == 0) return(invisible(NULL))
+    
+    df <- renameNWISColumns(df)
+    df$dateTime <- lubridate::with_tz(df$dateTime, "UTC")
+    
+    # keep only the columns you actually need downstream -- drop qualifier
+    # codes / agency_cd / tz_cd here to cut memory footprint substantially
+    df <- df %>%
+      select(site_no, dateTime, any_of(c("Flow_Inst", "DO_Inst", "Wtemp_Inst")))
+    
+    # one parquet file per site -- never held alongside the others in RAM
+    write_parquet(df, file.path("uv_data_by_site", paste0(site, ".parquet")))
+    invisible(NULL)
+  }, error = function(e) {
+    message("  [WARN] failed for site ", site, ": ", e$message)
+    invisible(NULL)
+  })
+}
+
+walk(qualifying_sites$site_no, fetch_and_write_uv)  # walk, not map -- nothing kept in memory
+
+uv_ds <- open_dataset("uv_data_by_site")   # arrow "dataset" -- not loaded into RAM
+
+# Row count without loading everything:
+uv_ds %>% summarise(n = n()) %>% collect()
+
+# Per-site summary -- computed out-of-core, only the small result comes into R:
+uv_summary <- uv_ds %>%
+  group_by(site_no) %>%
+  summarise(
+    n_records = n(),
+    pct_do_present = mean(!is.na(DO_Inst)) * 100,
+    pct_temp_present = mean(!is.na(Wtemp_Inst)) * 100,
+    date_min = min(dateTime, na.rm = TRUE),
+    date_max = max(dateTime, na.rm = TRUE)
+  ) %>%
+  collect()   # only NOW does it become an in-memory data frame -- and it's tiny
+
+# For plotting example sites, filter down to 3 sites BEFORE collecting:
+plot_data <- uv_ds %>%
+  filter(site_no %in% example_sites) %>%
+  collect()   # now safe -- this subset is small
+
+
+#uv_raw  <- bind_rows(uv_list)
+
+library(dplyr)
+
+library(data.table)
+
+uv_raw <- rbindlist(uv_list, fill = TRUE)
 
 message("  Raw rows downloaded: ", nrow(uv_raw))
 
