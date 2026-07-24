@@ -47,3 +47,10 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+USGS_uv_all_sites.rds
+uv_data_by_site/
+USGS_uv_all_sites.rds
+
+USGS_uv_all_sites.rds
+uv_data_by_site/
