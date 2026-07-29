@@ -28,15 +28,13 @@ library(viridis)
 # -----------------------------------------------------------------------------
 
 UV_RDS_FILE <- paste0(
-  "/Users/kellyloria/Documents/DRI/Stream_WQ_predictions/",
-  "post-fire-stream-water-quality-ml/USGS_uv_all_sites.rds"
+  "/Users/kellyloria/Documents/DRI/Stream_WQ_predictions/post-fire-stream-water-quality-ml/USGS_uv_all_sites.rds"
 )
 
 # This CSV should contain:
 # site_no, site_name, state_cd, lat, and lon
 SITE_METADATA_FILE <- paste0(
-  "/Users/kellyloria/Documents/DRI/Stream_WQ_predictions/",
-  "post-fire-stream-water-quality-ml/USGS_qualifying_sites.csv"
+  "/Users/kellyloria/Documents/DRI/Stream_WQ_predictions/post-fire-stream-water-quality-ml/USGS_sites_eligible_for_download.csv"
 )
 
 OUTPUT_FILE <- paste0(
@@ -228,14 +226,14 @@ western_states <- c(
   "california",
   "washington",
   "oregon",
-  #"utah",
-  #"colorado",
+  "utah",
+  "colorado",
   "idaho",
-  "nevada"
- # "arizona"
- # "new mexico",
-  #"montana",
-  #"wyoming"
+  "nevada",
+  "arizona",
+  "new mexico",
+  "montana",
+  "wyoming"
 )
 
 western_map <- map_data("state") %>%
@@ -277,13 +275,13 @@ mean_temp_do_map <- ggplot() +
     option = "plasma",
     direction = 1,
     name = expression(
-      "Mean temperature (" * degree * "C)"
+      "Temp. (" * degree * "C)"
     )
   ) +
   
   scale_size_continuous(
     name = expression(
-      "Mean DO (mg L"^{-1} * ")"
+      "DO (mg L"^{-1} * ")"
     ),
     range = c(2, 8)
   ) +
@@ -303,10 +301,10 @@ mean_temp_do_map <- ggplot() +
   ) +
   
   labs(
-    title = "Mean water temperature and dissolved oxygen at USGS gages",
+    title = "Mean water temp. and DO at USGS gages",
     subtitle = paste0(
-      "Point color represents mean temperature; ",
-      "point size represents mean dissolved oxygen; n = ",
+      "Point color represents mean temp.; ",
+      "point size represents mean DO; n = ",
       nrow(map_sites),
       " sites"
     ),
@@ -323,7 +321,7 @@ print(mean_temp_do_map)
 # -----------------------------------------------------------------------------
 
 ggsave(
-  filename = ,
+  filename = "mean_temp_do_map.png",
   plot = mean_temp_do_map,
   width = 10,
   height = 7,

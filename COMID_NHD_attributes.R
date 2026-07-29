@@ -3,6 +3,8 @@ library(dplyr)
 library(purrr)
 library(nhdplusTools)
 
+# source for land cover https://www.usgs.gov/national-hydrography/nhd-watershed-tool
+
 sites <- read_csv("/Users/kellyloria/Documents/DRI/Stream_WQ_predictions/data/USGS_sites_eligible_for_download.csv")
 
 sites <- sites %>%
@@ -836,3 +838,9 @@ ggplot(site_scores,
   geom_point(size = 3) +
   ggrepel::geom_text_repel(size = 3) +
   theme_classic()
+
+
+readr::write_csv(
+  all_dat_attributes,
+  "USGS_uv_sites_attributes.csv"
+)

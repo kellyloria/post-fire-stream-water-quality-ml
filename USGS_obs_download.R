@@ -107,32 +107,10 @@ site_meta <- bind_rows(do_sites_raw, temp_sites_raw) %>%
     lon = dec_long_va
   )
 
-# message("=== Step 1a: Querying NWIS for candidate stream sites ===")
-# 
-# fetch_sites <- function(state, parm) {
-#   message("  state=", state, "  parm=", parm)
-#   tryCatch(
-#     whatNWISsites(
-#       stateCd = state, siteType = "ST",
-#       parameterCd = parm, service = "uv"
-#     ),
-#     error = function(e) {
-#       message("  [WARN] whatNWISsites failed: ", e$message)
-#       NULL
-#     }
-#   )
-# }
-# 
-# do_sites_raw   <- map_dfr(target_states, fetch_sites, parm = PARM_DO)
-# temp_sites_raw <- map_dfr(target_states, fetch_sites, parm = PARM_TEMP)
-# 
 candidate_sites <- intersect(
   unique(do_sites_raw$site_no),
   unique(temp_sites_raw$site_no)
 )
-# message("  Candidate sites (both DO + temp, uv service): ", length(candidate_sites))
-# 
-# message("=== Step 1b: Fetching data availability catalogue (whatNWISdata) ===")
 
 CHUNK_SIZE <- 100
 site_chunks <- split(candidate_sites, ceiling(seq_along(candidate_sites) / CHUNK_SIZE))
@@ -151,33 +129,6 @@ fetch_availability <- function(sites_chunk) {
 avail_raw <- map_dfr(site_chunks, fetch_availability)
 message("  Availability catalogue rows returned: ", nrow(avail_raw))
 
-## Check of spatial coverage
-# avail_diagnostic <- avail_filtered %>%
-#   mutate(
-#     begin_date = as.Date(begin_date),
-#     end_date = as.Date(end_date),
-#     span_days = as.numeric(end_date - begin_date)
-#   ) %>%
-#   left_join(
-#     site_meta %>% select(site_no, state_cd, site_name),
-#     by = "site_no"
-#   ) %>%
-#   filter(state_cd %in% c("CO", "WY", "NM")) %>%
-#   select(
-#     state_cd,
-#     site_no,
-#     site_name,
-#     parm_cd,
-#     data_type_cd,
-#     begin_date,
-#     end_date,
-#     span_days,
-#     count_nu
-#   ) %>%
-#   arrange(state_cd, site_no, parm_cd)
-# 
-# print(avail_diagnostic, n = Inf)
-##
 
 message("=== Step 1c: Filtering to >", MIN_DAYS, "-day sub-daily records ===")
 
