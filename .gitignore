@@ -54,3 +54,8 @@ USGS_uv_all_sites.rds
 
 USGS_uv_all_sites.rds
 uv_data_by_site/
+
+# Large data files
+*.parquet
+*.rds
+uv_data_by_site/
